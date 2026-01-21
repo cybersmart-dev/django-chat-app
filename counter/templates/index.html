@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Realtime django app</title>
+        <style>
+        
+            .chatbox{
+                margin-top: 25px;
+                width: 100%;
+                display: flex;
+            }
+            .sender-chatbox{
+                justify-content: flex-end;
+            }
+            .receiver-chatbox{
+                justify-content: flex-start;
+            }
+            
+            .chatbox-contents{
+                background-color: #5efeb5bb;
+                height: auto;
+                max-width: 50%;
+                min-width: 30%;
+                padding: 15px;
+                border-radius: 12px;
+            }
+            
+            .chat-input{
+                bottom: 0;
+                position: absolute;
+                margin-bottom: 5%;
+                display: flex;
+                flex-direction: row;
+                place-items: center;
+                width: 100%;
+                
+                justify-content: center;
+            }
+            .chat-input > input {
+                height: 40px;
+                border-radius: 12px;
+                border: 1px solid black;
+                width: 70%;
+                padding-left: 10px;
+            }
+            .chat-input > button {
+                height: 45px;
+                margin-left: 10px;
+                border: 1px solid black;
+                border-radius: 12px;
+                background-color: transparent;
+                
+            }
+            #container{
+                padding: 15px;
+                overflow-y: scroll;
+                height: 70vh;
+                
+            }
+            body{
+                margin: 0;
+                padding: 0;
+                
+            }
+        </style>
+    </head>
+    <body>
+        <button onclick="connect()">Reconnect</button>
+        <div id="container">
+        <h4 id="counter">{{ text }}</h4>
+            
+        </div>
+        <div class="chat-input">
+            
+        <input  type="text" name="message" id="message" />
+            <button onclick="sendMessage()" type="submit">send</button>
+        </div>
+        
+        <script type="text/javascript" charset="utf-8">
+        
+            const container = document.getElementById("container")
+            
+            function getChatMessage (data) {
+                const auth_user = "{{ user }}"
+                
+                if (data.sender == auth_user){
+                    return `
+                        <div class="sender-chatbox chatbox">
+                            <div class="chatbox-contents">
+                                <span>You: </span>
+                                <span style="font-weight:bold;">${data.message}</span>
+                            </div>
+                        </div>
+                    `
+                }
+                return `
+                    <div class="receiver-chatbox chatbox">
+                        <div class="chatbox-contents">
+                            <span>${ data.sender }: </span>
+                            <span style="font-weight:bold;">${data.message}</span>
+                        </div>
+                    </div>
+                `
+            }
+            
+            let websocket;
+            
+            function connect () {
+                websocket = new WebSocket("ws://"+ window.location.host +"/ws/counter/")
+                
+                websocket.onopen = () => {
+                    console.log("WebSocket connected");
+              };
+              
+                websocket.onmessage = function (event) {
+                
+                    const data = JSON.parse(event.data)
+                    
+                    if (data.type == "chat"){
+                        container.insertAdjacentHTML("beforeend", getChatMessage(data))
+                    }
+                }
+              
+            }
+            connect()
+            
+            function sendMessage() {
+                message = document.getElementById("message")
+                websocket.send(JSON.stringify({
+                    "message":message.value
+                }))
+                message.value = ""
+            }
+        </script>
+    </body>
+</html>
